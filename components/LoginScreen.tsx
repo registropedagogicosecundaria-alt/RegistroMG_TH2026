@@ -133,7 +133,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                                     required
                                     value={carnet}
                                     onChange={(e) => setCarnet(e.target.value)}
-                                    placeholder="8639299"
+                                    placeholder="1234569"
                                     className="!bg-slate-50 !border-slate-300 focus:!border-blue-600 !py-5 !pl-16 !pr-4 !rounded-xl text-2xl font-bold placeholder:text-slate-300 text-slate-900 shadow-inner"
                                     icon={<i className="fas fa-id-badge text-3xl text-slate-400 ml-1"></i>}
                                 />
