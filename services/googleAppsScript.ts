@@ -10,27 +10,13 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const parseError = (err: any): string => {
     if (!err) return "Error desconocido";
     console.error("Database Error Details:", err);
-    
     if (typeof err === 'string') return err;
-    
     let message = err.message;
-    
-    // Si no hay mensaje pero es un objeto, lo serializamos para evitar [object Object]
     if (!message && typeof err === 'object') {
-        try {
-            message = JSON.stringify(err);
-        } catch (e) {
-            message = "Error de estructura de datos (no serializable)";
-        }
+        try { message = JSON.stringify(err); } catch (e) { message = "Error de estructura de datos"; }
     }
-
     if (err.details) message += ` - Detalles: ${err.details}`;
-    if (err.hint) message += ` (Sugerencia: ${err.hint})`;
     if (err.code) message += ` [Código: ${err.code}]`;
-    
-    if (err.code === '42501') return "ERROR DE PERMISOS (42501): No tienes permisos de escritura. Revisa las políticas RLS.";
-    if (err.code === '23502') return "ERROR DE DATOS (23502): Intento de insertar un valor nulo en un campo obligatorio (ID).";
-    
     return message || "Error en la operación de base de datos";
 };
 
@@ -52,42 +38,14 @@ export const getCaratulaData = async (userId: string): Promise<{ datos: string }
         if (err1) throw err1;
         const { data: inst, error: err2 } = await supabase.from('institutional_data').select('*').eq('teacher_id', userId).maybeSingle();
         if (err2) throw err2;
-        
-        const fields = [
-            inst?.department || '', 
-            inst?.district || '', 
-            inst?.network || '', 
-            inst?.sie_code || '', 
-            profile?.phone || '', 
-            inst?.management_year || '2025', 
-            inst?.school_unit || '', 
-            inst?.district_director_name || '', 
-            inst?.director_name || '', 
-            profile?.full_name || '', 
-            profile?.subject || ''
-        ];
+        const fields = [inst?.department || '', inst?.district || '', inst?.network || '', inst?.sie_code || '', profile?.phone || '', inst?.management_year || '2025', inst?.school_unit || '', inst?.district_director_name || '', inst?.director_name || '', profile?.full_name || '', profile?.subject || ''];
         return { datos: fields.join(',') };
-    } catch (e) { 
-        console.error("Error loading Caratula:", e);
-        return { datos: "" }; 
-    }
+    } catch (e) { return { datos: "" }; }
 };
 
 export const saveCaratulaData = async (payload: any, userId: string): Promise<string> => {
     try {
-        if (!userId) throw new Error("ID de usuario no válido.");
-        const { error: errorInst } = await supabase.from('institutional_data').upsert({ 
-            teacher_id: userId, 
-            department: payload.departamento, 
-            district: payload.distrito, 
-            network: payload.red, 
-            sie_code: payload.sie, 
-            management_year: parseInt(payload.gestion) || 2025, 
-            school_unit: payload.unidad, 
-            district_director_name: payload.distrital, 
-            director_name: payload.director 
-        }, { onConflict: 'teacher_id' });
-        
+        const { error: errorInst } = await supabase.from('institutional_data').upsert({ teacher_id: userId, department: payload.departamento, district: payload.distrito, network: payload.red, sie_code: payload.sie, management_year: parseInt(payload.gestion) || 2025, school_unit: payload.unidad, district_director_name: payload.distrital, director_name: payload.director }, { onConflict: 'teacher_id' });
         if (errorInst) throw errorInst;
         if (payload.asignatura) {
             const { error: errorProfile } = await supabase.from('profiles').update({ subject: payload.asignatura }).eq('id', userId);
@@ -99,27 +57,20 @@ export const saveCaratulaData = async (payload: any, userId: string): Promise<st
 
 // --- Course Management ---
 export const getCourses = async (userId: string): Promise<string[]> => {
-    if (!userId) return [];
     const { data, error } = await supabase.from('courses').select('label').eq('teacher_id', userId);
     if (error) throw error;
     return (data || []).map(c => c.label);
 };
 
 export const createCourse = async (courseLabel: string, userId: string): Promise<string> => {
-    try {
-        const parts = courseLabel.split(' ');
-        const { error } = await supabase.from('courses').insert({ teacher_id: userId, grade: parts[0], parallel: parts[1] });
-        if (error) throw error;
-        return "OK";
-    } catch (e) { return parseError(e); }
+    const parts = courseLabel.split(' ');
+    const { error } = await supabase.from('courses').insert({ teacher_id: userId, grade: parts[0], parallel: parts[1] });
+    return error ? parseError(error) : "OK";
 };
 
 export const deleteCourse = async (courseLabel: string, userId: string): Promise<string> => {
-    try {
-        const { error } = await supabase.from('courses').delete().eq('teacher_id', userId).eq('label', courseLabel);
-        if (error) throw error;
-        return "OK";
-    } catch (e) { return parseError(e); }
+    const { error } = await supabase.from('courses').delete().eq('teacher_id', userId).eq('label', courseLabel);
+    return error ? parseError(error) : "OK";
 };
 
 const getCourseIdByLabel = async (label: string, userId: string): Promise<string> => {
@@ -142,42 +93,36 @@ export const getFiliationData = async (courseName: string, userId: string): Prom
 export const saveFiliationData = async (data: any[][], courseName: string, userId: string): Promise<string> => {
     try {
         const courseId = await getCourseIdByLabel(courseName, userId);
-        const toUpdate: any[] = [];
-        const toInsert: any[] = [];
+        
+        // 1. Convertir a objetos y limpiar nombres
+        let records = data.map(row => ({
+            id: (row[10] && row[10].length > 5) ? row[10] : null,
+            course_id: courseId,
+            full_name: row[1]?.toString().trim().toUpperCase() || '',
+            gender: row[2]?.toString().trim() || '',
+            ci: row[3]?.toString().trim() || '',
+            rude: row[4]?.toString().trim() || '',
+            birth_date: row[5] || null,
+            age: parseInt(row[6]) || null,
+            tutor_name: row[7]?.toString().trim().toUpperCase() || '',
+            tutor_relationship: row[8]?.toString().trim().toUpperCase() || '',
+            tutor_phone: row[9]?.toString().trim() || '',
+            status: row[11] || 'ACTIVE'
+        }));
 
-        data.forEach(row => {
-            const student: any = { 
-                course_id: courseId, 
-                register_number: row[0], 
-                full_name: row[1]?.toString().trim().toUpperCase() || '', 
-                gender: row[2]?.toString().trim() || '', 
-                ci: row[3]?.toString().trim() || '', 
-                rude: row[4]?.toString().trim() || '', 
-                birth_date: row[5] || null, 
-                age: parseInt(row[6]) || null, 
-                tutor_name: row[7]?.toString().trim().toUpperCase() || '', 
-                tutor_relationship: row[8]?.toString().trim().toUpperCase() || '', 
-                tutor_phone: row[9]?.toString().trim() || '',
-                status: row[11] || 'ACTIVE' 
-            };
+        // 2. ORDENAR ALFABÉTICAMENTE POR NOMBRE COMPLETO
+        records.sort((a, b) => a.full_name.localeCompare(b.full_name));
 
-            // CRÍTICO: Si el ID existe y es válido, va a la lista de UPDATE.
-            // Si no existe, se omite la propiedad ID por completo para que Supabase lo genere.
-            if (row[10] && row[10] !== '' && row[10].length > 5) {
-                student.id = row[10];
-                toUpdate.push(student);
-            } else {
-                toInsert.push(student);
-            }
-        });
+        // 3. RE-ENUMERAR SEGÚN EL NUEVO ORDEN
+        records = records.map((rec, index) => ({ ...rec, register_number: index + 1 }));
 
-        // Procesar actualizaciones (Upsert requiere el ID)
+        const toUpdate = records.filter(r => r.id !== null);
+        const toInsert = records.filter(r => r.id === null).map(({ id, ...rest }) => rest);
+
         if (toUpdate.length > 0) {
             const { error: upErr } = await supabase.from('students').upsert(toUpdate, { onConflict: 'id' });
             if (upErr) throw upErr;
         }
-
-        // Procesar inserciones nuevas (Sin el campo ID en el objeto)
         if (toInsert.length > 0) {
             const { error: insErr } = await supabase.from('students').insert(toInsert);
             if (insErr) throw insErr;
@@ -188,11 +133,8 @@ export const saveFiliationData = async (data: any[][], courseName: string, userI
 };
 
 export const deleteStudentRow = async (studentId: any, courseName: string, userId: string): Promise<string> => {
-    try {
-        const { error } = await supabase.from('students').delete().eq('id', studentId);
-        if (error) throw error;
-        return "OK";
-    } catch (e) { return parseError(e); }
+    const { error } = await supabase.from('students').delete().eq('id', studentId);
+    return error ? parseError(error) : "OK";
 };
 
 // --- Asistencia ---
@@ -214,7 +156,7 @@ export const getAttendanceMonthData = async (month: string, courseName: string, 
         const startDate = `${year}-${month.padStart(2, '0')}-01`;
         const lastDay = new Date(year, parseInt(month), 0).getDate();
         const endDate = `${year}-${month.padStart(2, '0')}-${lastDay}`;
-        const { data: attRecords, error } = await supabase.from('attendance').select('*').in('student_id', studentIds).gte('date', startDate).lte('date', endDate);
+        const { data: attRecords, error = null } = await supabase.from('attendance').select('*').in('student_id', studentIds).gte('date', startDate).lte('date', endDate);
         if (error) throw error;
         const attendanceMap: any = {};
         const daysWithData = new Set<number>();
@@ -326,11 +268,10 @@ export const getCentralizadorData = async (courseName: string, userId: string): 
         const courseId = await getCourseIdByLabel(courseName, userId);
         const { data: students, error: sErr } = await supabase.from('students').select('id, full_name, register_number, status').eq('course_id', courseId).order('register_number', { ascending: true });
         if (sErr) throw sErr;
-        if (!students) return { success: true, data: [] };
-        const studentIds = students.map(s => s.id);
+        const studentIds = (students || []).map(s => s.id);
         const { data: allGrades, error: gErr } = await supabase.from('student_grades').select('*').in('student_id', studentIds);
         if (gErr) throw gErr;
-        const summary = students.map(s => {
+        const summary = (students || []).map(s => {
             const studentGrades = (allGrades || []).filter(g => g.student_id === s.id);
             const getTrimScore = (t: number) => {
                 const trimGrades = studentGrades.filter(g => g.trimester === t);
@@ -347,8 +288,8 @@ export const getCentralizadorData = async (courseName: string, userId: string): 
             const t1 = getTrimScore(1);
             const t2 = getTrimScore(2);
             const t3 = getTrimScore(3);
-            const validTrimesters = [t1, t2, t3].filter(t => t > 0).length;
-            const anual = validTrimesters > 0 ? Math.round((t1 + t2 + t3) / 3) : 0;
+            const trimesters = [t1, t2, t3].filter(t => t > 0);
+            const anual = trimesters.length > 0 ? Math.round((t1 + t2 + t3) / 3) : 0;
             return { id: s.id, name: s.full_name, status: s.status || 'ACTIVE', t1, t2, t3, anual };
         });
         return { success: true, data: summary };
@@ -392,8 +333,7 @@ export const saveTemasData = async (trimester: string, modifiedData: any, userId
 // --- Horarios ---
 export const getScheduleData = async (userId: string): Promise<any[]> => {
     try {
-        if (!userId) return [];
-        const { data, error } = await supabase.from('schedules').select('*').eq('teacher_id', userId).order('day_of_week', { ascending: true }).order('start_time', { ascending: true });
+        const { data, error = null } = await supabase.from('schedules').select('*').eq('teacher_id', userId).order('day_of_week', { ascending: true }).order('start_time', { ascending: true });
         if (error) throw error;
         return data || [];
     } catch (e) { return []; }
@@ -401,15 +341,8 @@ export const getScheduleData = async (userId: string): Promise<any[]> => {
 
 export const saveScheduleEntry = async (entry: any): Promise<string> => {
     try {
-        const record: any = { 
-            teacher_id: entry.teacher_id,
-            day_of_week: entry.day_of_week,
-            start_time: entry.start_time,
-            end_time: entry.end_time,
-            course_label: entry.course_label,
-            subject: entry.subject?.toString().toUpperCase().trim()
-        };
-        if (entry.id && entry.id !== "" && entry.id.length > 5) {
+        const record = { teacher_id: entry.teacher_id, day_of_week: entry.day_of_week, start_time: entry.start_time, end_time: entry.end_time, course_label: entry.course_label, subject: entry.subject?.toString().toUpperCase().trim() };
+        if (entry.id && entry.id.length > 5) {
             const { error } = await supabase.from('schedules').update(record).eq('id', entry.id);
             if (error) throw error;
         } else {
@@ -421,15 +354,8 @@ export const saveScheduleEntry = async (entry: any): Promise<string> => {
 };
 
 export const deleteScheduleEntry = async (entryId: string): Promise<string> => {
-    try {
-        const { error } = await supabase.from('schedules').delete().eq('id', entryId);
-        if (error) throw error;
-        return "OK";
-    } catch (e) { return parseError(e); }
-};
-
-export const exportCompleteReportPdf = async (trimester: string, courseName: string, userId: string): Promise<any> => {
-    return { data: { url: "https://docs.google.com/viewer?url=pdf_endpoint_pending", pageCount: "Supabase Report" } };
+    const { error } = await supabase.from('schedules').delete().eq('id', entryId);
+    return error ? parseError(error) : "OK";
 };
 
 export const getBoletinNotes = async (studentId: string, term: string, courseName: string, userId: string): Promise<Record<string, number>> => {
@@ -446,8 +372,8 @@ export const getBoletinNotes = async (studentId: string, term: string, courseNam
     } catch (e) { return {}; }
 };
 
-export const generateBoletinImage = async (studentName: string, trimesterLabel: string, grades: Record<string, number>): Promise<string> => {
-    return "https://docs.google.com/viewer?url=boletin_image_pending";
-};
-
 export const clearUserProperties = async (): Promise<boolean> => true;
+export const exportCompleteReportPdf = async () => ({ data: { url: "" } });
+
+// Fix: Updated generateBoletinImage to accept required parameters as used in the application.
+export const generateBoletinImage = async (studentName: string, trimester: string, grades: Record<string, number>): Promise<string> => "";
