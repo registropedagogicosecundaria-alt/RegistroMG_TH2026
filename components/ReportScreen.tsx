@@ -17,7 +17,9 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
     const [scheduleData, setScheduleData] = useState<ScheduleEntry[]>([]);
     const [caratula, setCaratula] = useState<any>(null);
     
-    // Shield Logic
+    const [scale, setScale] = useState(1);
+    const [containerHeight, setContainerHeight] = useState<string | number>('auto');
+    
     const [shieldImage, setShieldImage] = useState<string | null>(null);
     const [shieldPos, setShieldPos] = useState({ x: 50, y: 50 });
     const [isDragging, setIsDragging] = useState(false);
@@ -33,6 +35,32 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const reportContainerRef = useRef<HTMLDivElement>(null);
+    const previewWrapperRef = useRef<HTMLDivElement>(null);
+
+    const calculateScale = useCallback(() => {
+        if (!previewWrapperRef.current || !reportContainerRef.current) return;
+        const wrapperWidth = previewWrapperRef.current.offsetWidth - 32;
+        const isLandscape = printConfig.orientation === 'landscape';
+        const paperWidthPx = isLandscape ? 1056 : 816;
+
+        if (window.innerWidth < 1024) {
+            const newScale = wrapperWidth / paperWidthPx;
+            setScale(newScale);
+            setContainerHeight(reportContainerRef.current.offsetHeight * newScale + 100);
+        } else {
+            setScale(1);
+            setContainerHeight('auto');
+        }
+    }, [printConfig.orientation, reportType, isLoading]);
+
+    useEffect(() => {
+        const timer = setTimeout(calculateScale, 350);
+        window.addEventListener('resize', calculateScale);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', calculateScale);
+        }
+    }, [calculateScale, isLoading, reportType]);
 
     const loadAllData = useCallback(async () => {
         setIsLoading(true);
@@ -64,6 +92,7 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                 }
                 const studentsList = await api.getStudentsForAttendance(selectedCourse, userId);
                 setStudents(studentsList || []);
+                
                 if (reportType === 'centralizer') {
                     const res = await api.getGradesAndCriteria("", selectedTrimester, selectedCourse, userId);
                     if (res.success) setGradesData(res.data);
@@ -102,23 +131,14 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
     const handlePointerMove = (e: React.PointerEvent) => {
         if (!isDragging || !reportContainerRef.current) return;
         const containerRect = reportContainerRef.current.getBoundingClientRect();
-        const x = e.clientX - containerRect.left - dragOffset.x;
-        const y = e.clientY - containerRect.top - dragOffset.y;
+        const x = (e.clientX - containerRect.left - dragOffset.x) / scale;
+        const y = (e.clientY - containerRect.top - dragOffset.y) / scale;
         setShieldPos({ x, y });
     };
 
     const handlePointerUp = (e: React.PointerEvent) => {
         setIsDragging(false);
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => setShieldImage(reader.result as string);
-            reader.readAsDataURL(file);
-        }
     };
 
     const handlePrint = () => window.print();
@@ -130,7 +150,9 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
         return {
             width: isLandscape ? s.h : s.w,
             minHeight: isLandscape ? s.w : s.h,
-            padding: printConfig.margins === 'none' ? '0' : '0.4in'
+            padding: printConfig.margins === 'none' ? '0' : '0.4in',
+            transform: scale !== 1 ? `scale(${scale})` : 'none',
+            transformOrigin: 'top center',
         };
     };
 
@@ -149,7 +171,7 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
         ];
 
         return (
-            <div className="relative w-full h-full flex flex-col items-center border-[12px] border-double border-slate-800 p-8 min-h-[10in]">
+            <div className="relative w-full h-full flex flex-col items-center border-[12px] border-double border-slate-800 p-8 min-h-[10in] bg-white">
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
                     <span className="text-[25rem] font-black font-display rotate-[-45deg] border-slate-900 text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-transparent" style={{ WebkitTextStroke: '4px #000' }}>
                         {caratula.gestion}
@@ -211,15 +233,14 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
 
     const renderTable = () => {
         if (reportType === 'caratula') return renderCaratula();
-        
+        if (!selectedCourse && reportType !== 'schedule') {
+             return <div className="p-20 text-center"><p className="text-slate-400 font-bold">Por favor seleccione un curso para ver este reporte.</p></div>;
+        }
+
         switch (reportType) {
             case 'schedule':
                 const days = [
-                    { id: 1, name: 'LUNES' },
-                    { id: 2, name: 'MARTES' },
-                    { id: 3, name: 'MIÉRCOLES' },
-                    { id: 4, name: 'JUEVES' },
-                    { id: 5, name: 'VIERNES' }
+                    { id: 1, name: 'LUNES' }, { id: 2, name: 'MARTES' }, { id: 3, name: 'MIÉRCOLES' }, { id: 4, name: 'JUEVES' }, { id: 5, name: 'VIERNES' }
                 ];
                 return (
                     <div className="border-2 border-slate-900 bg-white">
@@ -251,7 +272,7 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                 const attDays = attendanceData?.days || [];
                 const monthNames = ["", "", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
                 return (
-                    <div className="border-2 border-slate-900">
+                    <div className="border-2 border-slate-900 bg-white">
                         <table className="w-full border-collapse text-[10px]">
                             <thead className="bg-slate-900 text-white uppercase">
                                 <tr>
@@ -286,7 +307,7 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
             case 'centralizer':
                 const criteria = gradesData.criteriaTexts || { ser: [], saber: [], hacer: [], auto: [] };
                 return (
-                    <div className="border-2 border-slate-900">
+                    <div className="border-2 border-slate-900 bg-white">
                         <table className="w-full border-collapse text-[10px]">
                             <thead className="bg-slate-900 text-white uppercase text-center">
                                 <tr>
@@ -336,7 +357,7 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                 );
             case 'filiation':
                 return (
-                    <div className="border-2 border-slate-900">
+                    <div className="border-2 border-slate-900 bg-white">
                         <table className="w-full border-collapse text-[10px]">
                             <thead className="bg-slate-900 text-white uppercase">
                                 <tr><th className="p-3 w-10 border-r border-slate-700">N°</th><th className="p-3 text-left pl-6 border-r border-slate-700">Apellidos y Nombres</th><th className="p-3 w-16 border-r border-slate-700">Sexo</th><th className="p-3 w-32 border-r border-slate-700">C.I.</th><th className="p-3 w-40 border-r border-slate-700">RUDE</th><th className="p-3 w-28 border-r border-slate-700">Fec. Nac.</th><th className="p-3">Tutor / Celular</th></tr>
@@ -359,7 +380,7 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                 );
             case 'progress':
                 return (
-                    <div className="border-2 border-slate-900">
+                    <div className="border-2 border-slate-900 bg-white">
                         <table className="w-full border-collapse text-[10px]">
                             <thead className="bg-slate-900 text-white uppercase text-center">
                                 <tr>
@@ -394,29 +415,63 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
     };
 
     return (
-        <div className="min-h-screen bg-[#0f172a] flex flex-col font-sans">
+        <div className="min-h-screen bg-[#0f172a] flex flex-col font-sans h-screen overflow-hidden">
             <style>{`
                 @media print {
                     body { background: white !important; margin: 0 !important; padding: 0 !important; }
                     .no-print { display: none !important; }
-                    #report-container { box-shadow: none !important; border: none !important; margin: 0 !important; width: 100% !important; padding: 0.5in !important; overflow: hidden !important; }
+                    #report-container { box-shadow: none !important; border: none !important; margin: 0 !important; width: 100% !important; padding: 0.5in !important; transform: none !important; }
                     @page { size: ${printConfig.paperSize} ${printConfig.orientation}; margin: 0; }
                 }
                 .font-display { font-family: 'Archivo Black', sans-serif; }
                 #report-container { background: white; transition: transform 0.2s; position: relative; }
+                .mobile-scroll-container::-webkit-scrollbar { height: 4px; }
+                .mobile-scroll-container::-webkit-scrollbar-track { background: transparent; }
+                .mobile-scroll-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
             `}</style>
 
-            <div className="no-print bg-slate-900 border-b border-white/5 shadow-xl">
+            <div className="no-print bg-slate-900 border-b border-white/5 shadow-xl flex-shrink-0">
                 <Header title="Reportes Pro" icon={<i className="fas fa-print text-amber-400"></i>}>
                     <div className="flex gap-2">
-                        <Button onClick={handlePrint} variant="success" className="shadow-lg"><i className="fas fa-file-pdf mr-2"></i>PDF / IMPRIMIR</Button>
-                        <Button onClick={() => setView(View.Menu)} variant="secondary" className="!bg-slate-800 border-slate-700 text-white"><i className="fas fa-arrow-left"></i></Button>
+                        <Button onClick={handlePrint} variant="success" className="shadow-lg !rounded-xl"><i className="fas fa-file-pdf sm:mr-2"></i><span className="hidden sm:inline">PDF / IMPRIMIR</span></Button>
+                        <Button onClick={() => setView(View.Menu)} variant="secondary" className="!bg-slate-800 border-slate-700 text-white !rounded-xl"><i className="fas fa-arrow-left"></i></Button>
                     </div>
                 </Header>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
-                <aside className="w-72 bg-slate-800/50 p-6 flex flex-col gap-6 no-print border-r border-white/5 overflow-y-auto">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+                <div className="lg:hidden bg-slate-900 p-3 flex flex-col gap-3 no-print border-b border-white/10 shadow-2xl z-50">
+                    <div className="relative w-full">
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-slate-900 to-transparent z-10 pointer-events-none"></div>
+                        <div className="flex gap-2 overflow-x-auto mobile-scroll-container pb-2 px-1 -mx-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+                            {['1', '2', '3'].map(t => (
+                                <button key={t} onClick={() => setSelectedTrimester(t)} className={`flex-shrink-0 w-14 h-11 rounded-xl font-black text-xs transition-all border-2 ${selectedTrimester === t ? 'bg-amber-500 border-amber-400 text-white shadow-lg' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
+                                    {t}° T
+                                </button>
+                            ))}
+                            <div className="flex-shrink-0 w-[2px] bg-slate-700 mx-2 self-stretch rounded-full opacity-50"></div>
+                            {[
+                                { id: 'caratula', label: 'Carátula', icon: 'fa-id-card' },
+                                { id: 'schedule', label: 'Horario', icon: 'fa-clock' },
+                                { id: 'centralizer', label: 'Notas', icon: 'fa-table' },
+                                { id: 'attendance', label: 'Asistencia', icon: 'fa-calendar-check' },
+                                { id: 'filiation', label: 'Filiación', icon: 'fa-users' },
+                                { id: 'progress', label: 'Avance', icon: 'fa-chart-line' }
+                            ].map(btn => (
+                                <button key={btn.id} onClick={() => setReportType(btn.id as any)} className={`flex-shrink-0 px-5 h-11 rounded-xl font-black text-xs transition-all flex items-center gap-2 border-2 ${reportType === btn.id ? 'bg-white border-white text-slate-900 shadow-xl' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
+                                    <i className={`fas ${btn.icon}`}></i> {btn.label}
+                                </button>
+                            ))}
+                            <div className="flex-shrink-0 w-8 h-4"></div>
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => setPrintConfig({...printConfig, orientation: 'portrait'})} className={`flex-1 h-10 rounded-xl text-[10px] font-black border-2 transition-all flex items-center justify-center gap-2 ${printConfig.orientation === 'portrait' ? 'bg-slate-100 border-white text-slate-900' : 'bg-slate-800 border-slate-700 text-slate-500'}`}><i className="fas fa-arrows-alt-v"></i> VERTICAL</button>
+                        <button onClick={() => setPrintConfig({...printConfig, orientation: 'landscape'})} className={`flex-1 h-10 rounded-xl text-[10px] font-black border-2 transition-all flex items-center justify-center gap-2 ${printConfig.orientation === 'landscape' ? 'bg-slate-100 border-white text-slate-900' : 'bg-slate-800 border-slate-700 text-slate-500'}`}><i className="fas fa-arrows-alt-h"></i> HORIZONTAL</button>
+                    </div>
+                </div>
+
+                <aside className="hidden lg:flex w-72 bg-slate-800/50 p-6 flex-col gap-6 no-print border-r border-white/5 overflow-y-auto">
                     <section>
                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Trimestre (Si aplica)</h3>
                         <div className="grid grid-cols-3 gap-2">
@@ -427,7 +482,6 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                             ))}
                         </div>
                     </section>
-
                     <section className="space-y-1.5">
                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Seleccionar Documento</h3>
                         {[
@@ -443,67 +497,54 @@ const ReportScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                             </button>
                         ))}
                     </section>
-
-                    <section className="pt-6 border-t border-white/5">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Página</h3>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button onClick={() => setPrintConfig({...printConfig, orientation: 'portrait'})} className={`p-3 rounded-xl text-[10px] font-black border-2 transition-all ${printConfig.orientation === 'portrait' ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-500'}`}>VERT.</button>
-                            <button onClick={() => setPrintConfig({...printConfig, orientation: 'landscape'})} className={`p-3 rounded-xl text-[10px] font-black border-2 transition-all ${printConfig.orientation === 'landscape' ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-500'}`}>HORIZ.</button>
-                        </div>
-                    </section>
                 </aside>
 
-                <main className="flex-1 overflow-auto bg-[#0a0f1c] p-10 flex flex-col items-center">
+                <main ref={previewWrapperRef} className="flex-1 overflow-auto bg-[#0a0f1c] p-4 lg:p-10 flex flex-col items-center custom-scrollbar relative">
                     {isLoading ? (
                         <div className="h-full flex flex-col items-center justify-center space-y-4">
                             <div className="loader-circle mb-4 !border-t-amber-500"></div>
                             <p className="text-amber-500 font-black uppercase tracking-widest text-[10px]">Generando Reporte...</p>
                         </div>
                     ) : (
-                        <div 
-                            id="report-container" 
-                            ref={reportContainerRef}
-                            style={getPaperStyle()} 
-                            className="shadow-2xl flex flex-col text-slate-900 paper-preview"
-                        >
-                            {reportType !== 'caratula' && (
-                                <div className="flex justify-between items-start border-b-[4px] border-slate-900 pb-4 mb-6">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-14 h-14 bg-slate-900 rounded-xl flex items-center justify-center text-white text-2xl font-display font-black">UE</div>
-                                        <div>
-                                            <h1 className="text-2xl font-display font-black uppercase leading-none mb-1 tracking-tighter">{caratula?.unidad}</h1>
-                                            <div className="flex gap-3 text-[9px] font-black uppercase text-slate-400">
-                                                <span>{caratula?.distrito}</span>
-                                                <span>•</span>
-                                                <span>CURSO: {selectedCourse || 'GENERAL'}</span>
+                        <div style={{ height: containerHeight }} className="w-full flex flex-col items-center">
+                            <div id="report-container" ref={reportContainerRef} style={getPaperStyle()} className="shadow-2xl flex flex-col text-slate-900 bg-white origin-top">
+                                {reportType !== 'caratula' && (
+                                    <div className="flex justify-between items-start border-b-[4px] border-slate-900 pb-4 mb-6">
+                                        <div className="flex gap-4 items-center">
+                                            <div className="w-14 h-14 bg-slate-900 rounded-xl flex items-center justify-center text-white text-2xl font-display font-black">UE</div>
+                                            <div>
+                                                <h1 className="text-2xl font-display font-black uppercase leading-none mb-1 tracking-tighter">{caratula?.unidad}</h1>
+                                                <div className="flex gap-3 text-[9px] font-black uppercase text-slate-400">
+                                                    <span>{caratula?.distrito}</span>
+                                                    <span>•</span>
+                                                    <span>CURSO: {selectedCourse || 'GENERAL'}</span>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="text-right">
+                                            <div className="bg-slate-900 text-white px-3 py-1 text-[8px] font-black uppercase tracking-widest mb-1 rounded-md">REGISTRO OFICIAL</div>
+                                            <h2 className="text-lg font-black uppercase text-slate-800 leading-tight">
+                                                {reportType === 'schedule' ? 'Horario de Labores' : 
+                                                 reportType === 'centralizer' ? 'Evaluación Pedagógica' : 
+                                                 reportType === 'attendance' ? 'Registro Asistencia' : 
+                                                 reportType === 'filiation' ? 'Datos de Inscripción' : 'Avance Curricular'}
+                                            </h2>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">GESTIÓN {caratula?.gestion}</span>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="bg-slate-900 text-white px-3 py-1 text-[8px] font-black uppercase tracking-widest mb-1 rounded-md">REGISTRO OFICIAL</div>
-                                        <h2 className="text-lg font-black uppercase text-slate-800 leading-tight">
-                                            {reportType === 'schedule' ? 'Horario de Labores' : 
-                                             reportType === 'centralizer' ? 'Evaluación Pedagógica' : 
-                                             reportType === 'attendance' ? 'Registro Asistencia' : 
-                                             reportType === 'filiation' ? 'Datos de Inscripción' : 'Avance Curricular'}
-                                        </h2>
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">GESTIÓN {caratula?.gestion}</span>
+                                )}
+                                {renderTable()}
+                                {reportType !== 'caratula' && (
+                                    <div className="mt-auto grid grid-cols-3 gap-12 px-8 pt-10">
+                                        <div className="text-center pt-4 border-t border-slate-900"><p className="text-[9px] font-black uppercase">Sello U.E.</p></div>
+                                        <div className="text-center pt-4 border-t border-slate-900"><p className="text-[9px] font-black uppercase">Dirección</p></div>
+                                        <div className="text-center pt-4 border-t border-slate-900">
+                                            <p className="text-[9px] font-black uppercase">{caratula?.profesor}</p>
+                                            <p className="text-[7px] font-bold text-slate-400 uppercase">Firma del Docente</p>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {renderTable()}
-
-                            {reportType !== 'caratula' && (
-                                <div className="mt-auto grid grid-cols-3 gap-12 px-8 pt-10">
-                                    <div className="text-center pt-4 border-t border-slate-900"><p className="text-[9px] font-black uppercase">Sello U.E.</p></div>
-                                    <div className="text-center pt-4 border-t border-slate-900"><p className="text-[9px] font-black uppercase">Dirección</p></div>
-                                    <div className="text-center pt-4 border-t border-slate-900">
-                                        <p className="text-[9px] font-black uppercase">{caratula?.profesor}</p>
-                                        <p className="text-[7px] font-bold text-slate-400 uppercase">Firma del Docente</p>
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     )}
                 </main>
