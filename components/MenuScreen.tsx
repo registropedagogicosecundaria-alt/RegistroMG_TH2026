@@ -61,7 +61,6 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ setView, onLogout, navigateToCo
         try { await clearUserProperties(); } finally { onLogout(); }
     };
 
-    // NUEVO ORDEN SOLICITADO
     const menuItems: { icon: string; title: string; description: string; view?: View; target?: View; colorTheme: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'indigo' | 'cyan' }[] = [
         { icon: 'fas fa-id-card', title: 'Carátula', description: 'Configuración general e información institucional.', view: View.Caratula, colorTheme: 'blue' },
         { icon: 'fas fa-clock', title: 'Horario', description: 'Gestión y organización de horarios semanales.', view: View.Horario, colorTheme: 'cyan' },
@@ -69,7 +68,7 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ setView, onLogout, navigateToCo
         { icon: 'fas fa-calendar-alt', title: 'Asistencia', description: 'Control diario de asistencia y reportes.', target: View.Attendance, colorTheme: 'green' },
         { icon: 'fas fa-edit', title: 'Notas', description: 'Registro pedagógico por dimensiones.', target: View.Grades, colorTheme: 'orange' },
         { icon: 'fas fa-book-reader', title: 'Avance', description: 'Control de contenidos curriculares.', view: View.Temas, colorTheme: 'indigo' },
-        { icon: 'fas fa-chart-pie', title: 'Reportes Pro', description: 'Dashboard analítico y exportado profesional.', view: View.Reports, colorTheme: 'red' },
+        { icon: 'fas fa-chart-pie', title: 'Reportes Pro', description: 'Dashboard analítico y exportado profesional.', target: View.Reports, colorTheme: 'red' },
     ];
 
     return (
