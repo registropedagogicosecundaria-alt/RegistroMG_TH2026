@@ -103,23 +103,23 @@ const AttendanceScreen: React.FC<{ setView: (v: View) => void, selectedCourse: s
                     <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-xl shadow-sm">
                         <i className="fas fa-calendar-alt"></i>
                     </div>
-                    <h1 className="text-xl font-black text-slate-800 tracking-tight">Registro de Asistencia</h1>
+                    <h1 className="text-xl font-black text-slate-800 tracking-tight">Control de Asistencia</h1>
                 </div>
                 <div className="flex gap-2">
                     <Button onClick={handleSave} variant="success" isLoading={isProcessing} className="!bg-[#22c55e] !border-b-[#16a34a] !px-6 !py-2.5 !rounded-xl !text-sm">
                         <i className="fas fa-save mr-2"></i> GUARDAR
                     </Button>
-                    <Button onClick={() => setView(View.Menu)} variant="secondary" className="!bg-[#e2e8f0] !border-b-[#cbd5e1] !px-4 !py-2.5 !rounded-xl">
-                        <i className="fas fa-arrow-left text-slate-600"></i>
+                    <Button onClick={() => setView(View.Menu)} variant="secondary" className="!bg-[#334155] !border-b-[#1e293b] !px-4 !py-2.5 !rounded-xl !text-white hover:!bg-slate-600">
+                        <i className="fas fa-arrow-left mr-2"></i> ATRÁS
                     </Button>
                 </div>
             </div>
 
-            <main className="p-4 sm:p-6 space-y-4 max-w-[100%] lg:max-w-7xl mx-auto w-full">
+            <main className="p-4 sm:p-6 space-y-6 w-full mx-auto">
                 
                 <div className="bg-white rounded-[2rem] border-2 border-emerald-500 p-6 shadow-sm">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
-                        <h2 className="text-2xl font-black text-slate-900">{selectedCourse || 'SIN CURSO'}</h2>
+                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{selectedCourse || 'SIN CURSO'}</h2>
                         <div className="w-full lg:w-48">
                             <select 
                                 value={selectedMonth} 
@@ -151,19 +151,19 @@ const AttendanceScreen: React.FC<{ setView: (v: View) => void, selectedCourse: s
                     </div>
                 </div>
 
-                {/* --- VISTA PC: TABLA MENSUAL --- */}
+                {/* --- VISTA PC: TABLA MENSUAL 100% ANCHO --- */}
                 <div className="hidden lg:block bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
                                     <th className="p-4 w-12 text-center">#</th>
-                                    <th className="p-4 text-left min-w-[250px] sticky left-0 bg-slate-50 z-10">Estudiante</th>
+                                    <th className="p-4 text-left min-w-[350px] sticky left-0 bg-slate-50 z-10">Estudiante</th>
                                     {enabledDays.map(day => (
                                         <th key={day.date} className="p-4 text-center min-w-[70px]">
                                             <div className="flex flex-col items-center justify-center">
-                                                <span className="text-[9px] opacity-60 font-black mb-1">{day.label.split(' ')[0]}</span>
-                                                <span className="text-lg text-slate-800 font-black leading-none">{day.date}</span>
+                                                <span className="text-[10px] opacity-60 font-black mb-1">{day.label.split(' ')[0]}</span>
+                                                <span className="text-xl text-slate-800 font-black leading-none">{day.date}</span>
                                             </div>
                                         </th>
                                     ))}
@@ -174,7 +174,7 @@ const AttendanceScreen: React.FC<{ setView: (v: View) => void, selectedCourse: s
                                     <tr><td colSpan={enabledDays.length + 2} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest">Cargando Planilla...</td></tr>
                                 ) : (
                                     students.map((student, idx) => (
-                                        <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                                             <td className="p-4 text-center font-bold text-slate-300">{idx + 1}</td>
                                             <td className="p-4 font-black text-slate-700 uppercase tracking-tight sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-50">
                                                 {student.name}
@@ -190,7 +190,7 @@ const AttendanceScreen: React.FC<{ setView: (v: View) => void, selectedCourse: s
                                                             {!isWithdrawn && (
                                                                 <button 
                                                                     onClick={() => handleToggleAttendance(student.id, day.date)}
-                                                                    className={`w-11 h-11 rounded-xl font-black transition-all active:scale-95 flex items-center justify-center text-lg mx-auto ${props.tableBtn}`}
+                                                                    className={`w-12 h-12 rounded-xl font-black transition-all active:scale-95 flex items-center justify-center text-xl mx-auto ${props.tableBtn}`}
                                                                 >
                                                                     {props.text}
                                                                 </button>
@@ -208,7 +208,7 @@ const AttendanceScreen: React.FC<{ setView: (v: View) => void, selectedCourse: s
                     </div>
                 </div>
 
-                {/* --- VISTA CELULAR: TARJETAS + LLAMANDO LISTA --- */}
+                {/* --- VISTA CELULAR: TARJETAS --- */}
                 <div className="lg:hidden space-y-4">
                     {enabledDays.length > 0 && (
                         <div className="bg-white rounded-[1.5rem] p-4 flex items-center justify-between shadow-sm border border-slate-100">
