@@ -29,10 +29,10 @@ const DIMENSIONS: {
     maxPoints: number; 
     maxCount: number 
 }[] = [
-    { key: 'ser', name: 'SER (10 pts)', shortName: 'SER', colorText: 'text-green-700', borderColor: 'border-green-600', cellBorder: 'border-green-500', headerBg: 'bg-green-600', badgeBg: 'bg-green-600', colBg: 'bg-green-50', proColBg: 'bg-slate-100', maxPoints: 10, maxCount: 3 },
-    { key: 'saber', name: 'SABER (45 pts)', shortName: 'SABER', colorText: 'text-blue-700', borderColor: 'border-blue-600', cellBorder: 'border-blue-500', headerBg: 'bg-blue-600', badgeBg: 'bg-blue-600', colBg: 'bg-blue-50', proColBg: 'bg-slate-100', maxPoints: 45, maxCount: 8 },
-    { key: 'hacer', name: 'HACER (40 pts)', shortName: 'HACER', colorText: 'text-orange-700', borderColor: 'border-orange-600', cellBorder: 'border-orange-500', headerBg: 'bg-orange-600', badgeBg: 'bg-orange-600', colBg: 'bg-orange-50', proColBg: 'bg-slate-100', maxPoints: 40, maxCount: 8 },
-    { key: 'auto', name: 'AUTO (5 pts)', shortName: 'AUTO', colorText: 'text-purple-700', borderColor: 'border-purple-600', cellBorder: 'border-purple-500', headerBg: 'bg-purple-600', badgeBg: 'bg-purple-600', colBg: 'bg-purple-50', proColBg: 'bg-slate-100', maxPoints: 5, maxCount: 1 },
+    { key: 'ser', name: 'SER (10 PTS)', shortName: 'SER', colorText: 'text-green-700', borderColor: 'border-green-600', cellBorder: 'border-green-500', headerBg: 'bg-green-600', badgeBg: 'bg-green-600', colBg: 'bg-green-50', proColBg: 'bg-slate-50', maxPoints: 10, maxCount: 3 },
+    { key: 'saber', name: 'SABER (45 PTS)', shortName: 'SABER', colorText: 'text-blue-700', borderColor: 'border-blue-600', cellBorder: 'border-blue-500', headerBg: 'bg-blue-600', badgeBg: 'bg-blue-600', colBg: 'bg-blue-50', proColBg: 'bg-slate-50', maxPoints: 45, maxCount: 8 },
+    { key: 'hacer', name: 'HACER (40 PTS)', shortName: 'HACER', colorText: 'text-orange-700', borderColor: 'border-orange-600', cellBorder: 'border-orange-500', headerBg: 'bg-orange-600', badgeBg: 'bg-orange-600', colBg: 'bg-orange-50', proColBg: 'bg-slate-50', maxPoints: 40, maxCount: 8 },
+    { key: 'auto', name: 'AUTO (5 PTS)', shortName: 'AUTO', colorText: 'text-purple-700', borderColor: 'border-purple-600', cellBorder: 'border-purple-500', headerBg: 'bg-purple-600', badgeBg: 'bg-purple-600', colBg: 'bg-purple-50', proColBg: 'bg-slate-50', maxPoints: 5, maxCount: 1 },
 ];
 
 interface PickerState {
@@ -251,23 +251,16 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
         try {
             const response = await api.getCentralizadorData(selectedCourse, userId);
             if (response.success && response.data) {
-                // Sincronizar con la nota actual que se está viendo en pantalla
                 const finalData = response.data.map(row => {
                     const liveScore = calculatedScores[row.id]?.final || 0;
-                    
-                    // Solo actualizamos el trimestre que estamos editando en vivo
                     let t1 = row.t1;
                     let t2 = row.t2;
                     let t3 = row.t3;
-
                     if (selectedTerm === '1') t1 = liveScore;
                     if (selectedTerm === '2') t2 = liveScore;
                     if (selectedTerm === '3') t3 = liveScore;
-
-                    // Recalcular promedio anual con la nota en vivo integrada
                     const trimesters = [t1, t2, t3].filter(t => t > 0);
                     const anual = trimesters.length > 0 ? Math.round((t1 + t2 + t3) / 3) : 0;
-
                     return { ...row, t1, t2, t3, anual };
                 });
                 setCentralizerData(finalData);
@@ -327,7 +320,7 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                         </div>
                         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                              <div className="flex items-center gap-2 bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 shadow-inner w-full sm:w-auto">
-                                <span className="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Cambiar Trimestre:</span>
+                                <span className="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Periodo:</span>
                                 <select value={selectedTerm} onChange={e => setSelectedTerm(e.target.value)} className="bg-transparent text-slate-800 font-bold text-base focus:outline-none cursor-pointer uppercase w-full">
                                     <option value="1">1er Trimestre</option>
                                     <option value="2">2do Trimestre</option>
@@ -347,19 +340,19 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                                 {dim.key !== 'auto' ? (
                                     <>
                                         <select value={criteriaConfig[dim.key].count} onChange={(e) => handleCriteriaCountChange(dim.key, parseInt(e.target.value))} className={`w-full mb-3 text-sm p-2 rounded border-2 bg-white font-bold text-slate-700 outline-none ${dim.borderColor}`}>
-                                            {Array.from({length: dim.maxCount}, (_, i) => i + 1).map(n => (<option key={n} value={n}>{n} Criterios</option>))}
+                                            {Array.from({length: dim.maxCount}, (_, i) => i + 1).map(n => (<option key={n} value={n}>{n} Casillas</option>))}
                                         </select>
                                         <div className="space-y-2 w-full">
                                             {Array.from({length: criteriaConfig[dim.key].count}).map((_, i) => (
                                                 <div key={i} className="flex gap-2 items-center">
-                                                    <span className={`text-xs font-bold w-8 text-center text-white rounded py-2 ${dim.badgeBg}`}>C{i+1}</span>
-                                                    <input type="text" placeholder={`TITULO C${i+1}`} value={criteriaConfig[dim.key].titles[i] || ''} onChange={(e) => handleCriteriaTitleChange(dim.key, i, e.target.value)} className={`w-full text-xs p-2 border-2 rounded outline-none uppercase font-bold text-slate-600 ${dim.borderColor} bg-white h-8 focus:border-slate-800`} />
+                                                    <span className={`text-xs font-black w-8 text-center text-white rounded py-2 ${dim.badgeBg}`}>C{i+1}</span>
+                                                    <input type="text" placeholder={`C${i+1}: Título...`} value={criteriaConfig[dim.key].titles[i] || ''} onChange={(e) => handleCriteriaTitleChange(dim.key, i, e.target.value)} className={`w-full text-[10px] p-2 border-2 rounded outline-none uppercase font-black text-slate-600 ${dim.borderColor} bg-white h-8 focus:border-slate-800 tracking-tight`} />
                                                 </div>
                                             ))}
                                         </div>
                                     </>
                                 ) : (
-                                    <p className={`text-xs font-medium italic border-2 p-2 rounded bg-white ${dim.borderColor} ${dim.colorText}`}>La autoevaluación es un criterio único de 5 pts.</p>
+                                    <p className={`text-xs font-medium italic border-2 p-2 rounded bg-white ${dim.borderColor} ${dim.colorText}`}>Autoevaluación única sobre 5 pts.</p>
                                 )}
                             </div>
                         ))}
@@ -388,17 +381,18 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                                         return (
                                             <div key={student.id} className={`bg-white rounded-xl shadow-sm border-l-4 ${finalScore >= 51 ? 'border-l-green-500' : 'border-l-red-500'} p-4 flex flex-col gap-4 border-y border-r border-slate-100 ${isWithdrawn ? 'opacity-50' : ''}`}>
                                                  <div className="flex justify-between items-center border-b border-slate-100 pb-2"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">{idx + 1}</div><h3 className="text-sm font-black text-slate-800 uppercase">{student.name} {isWithdrawn && "(R)"}</h3></div></div>
-                                                 <div className="flex flex-col items-center py-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nota Final</span><div className={`text-6xl font-black ${finalScore >= 51 ? 'text-green-600' : 'text-red-600'}`}>{finalScore}</div></div>
+                                                 {/* Nota Final Movil igualada a PRO */}
+                                                 <div className="flex flex-col items-center py-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nota Final</span><div className={`text-xl font-black ${finalScore >= 51 ? 'text-green-600' : 'text-red-600'}`}>{finalScore}</div></div>
                                             </div>
                                         );
                                     }
                                     const dim = DIMENSIONS.find(d => d.key === mobileActiveDim)!;
                                     return (
                                         <div key={student.id} className={`bg-white rounded-xl shadow-sm border-2 ${dim.borderColor} p-4 flex flex-col gap-3 ${isWithdrawn ? 'opacity-50 grayscale' : ''}`}>
-                                            <div className="flex justify-between items-start"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">{idx + 1}</div><h3 className="text-sm font-black text-slate-800 uppercase">{student.name} {isWithdrawn && "(RETIRADO)"}</h3></div><div className={`text-base font-black px-3 py-1 rounded-lg ${dim.headerBg} text-white`}>{scores[`${mobileActiveDim}_weighted`] ?? 0} pts</div></div>
+                                            <div className="flex justify-between items-start"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">{idx + 1}</div><h3 className="text-sm font-black text-slate-800 uppercase">{student.name} {isWithdrawn && "(RETIRADO)"}</h3></div><div className={`text-xl font-black px-3 py-1 rounded-lg ${dim.headerBg} text-white`}>{scores[`${mobileActiveDim}_weighted`] ?? 0} pts</div></div>
                                             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 bg-slate-50 p-2 rounded-lg">
                                                  {Array.from({length: criteriaConfig[dim.key].count}).map((_, i) => (
-                                                    <input key={i} type="text" inputMode="decimal" disabled={isWithdrawn} value={gradesData[student.id]?.[dim.key]?.[i] || ''} onChange={e => { const val = e.target.value; if (val === '' || /^\d{0,2}(\.\d{0,1})?$/.test(val)) { if (parseFloat(val) > dim.maxPoints) return; handleGradeChange(student.id, dim.key, i, val); } }} className={`w-full h-12 text-center text-xl font-black ${dim.colorText} bg-white border-2 border-slate-200 rounded-lg outline-none shadow-sm disabled:bg-slate-100 disabled:cursor-not-allowed`} placeholder={isWithdrawn ? "R" : "-"} />
+                                                    <input key={i} type="text" inputMode="decimal" disabled={isWithdrawn} value={gradesData[student.id]?.[dim.key]?.[i] || ''} onChange={e => { const val = e.target.value; if (val === '' || /^\d{0,2}(\.\d{0,1})?$/.test(val)) { if (parseFloat(val) > dim.maxPoints) return; handleGradeChange(student.id, dim.key, i, val); } }} className={`w-full h-12 text-center text-sm font-bold ${dim.colorText} bg-white border-2 border-slate-200 rounded-lg outline-none shadow-sm disabled:bg-slate-100 disabled:cursor-not-allowed`} placeholder={isWithdrawn ? "R" : "-"} />
                                                 ))}
                                             </div>
                                         </div>
@@ -407,24 +401,24 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                              </div>
                          </div>
 
-                        <div className="hidden lg:block neo-table-container overflow-auto h-[calc(100vh-100px)] custom-scrollbar shadow-inner bg-white rounded-xl border-2 border-slate-300 relative">
+                        <div className="hidden lg:block neo-table-container overflow-auto h-[calc(100vh-140px)] custom-scrollbar shadow-inner bg-white rounded-xl border-2 border-slate-300 relative">
                             <table className="neo-table border-separate border-spacing-0 w-full">
                                 <thead className="sticky top-0 !z-[100]">
-                                    <tr className="uppercase text-sm tracking-wide">
-                                        <th rowSpan={2} className="sticky left-0 top-0 !z-[100] bg-slate-100 text-slate-700 font-display border-b-2 border-r-2 border-slate-300 w-12 text-center">N°</th>
-                                        <th rowSpan={2} className="sticky left-12 top-0 !z-[100] bg-slate-100 text-slate-700 font-display border-b-2 border-r-2 border-slate-300 min-w-[300px] text-left pl-4">ESTUDIANTE</th>
+                                    <tr className="uppercase text-[10px] tracking-widest font-black">
+                                        <th rowSpan={2} className="sticky left-0 top-0 !z-[100] bg-slate-100 text-slate-700 border-b-2 border-r-2 border-slate-400 w-12 text-center">N°</th>
+                                        <th rowSpan={2} className="sticky left-12 top-0 !z-[100] bg-slate-100 text-slate-700 border-b-2 border-r-2 border-slate-400 min-w-[300px] text-left pl-4">ESTUDIANTE</th>
                                         {DIMENSIONS.map(dim => visibleDimensions[dim.key] && (
-                                            <th key={dim.key} colSpan={criteriaConfig[dim.key].count + 1} className={`text-center py-3 border-r-2 border-b-2 ${dim.cellBorder} font-display text-white ${dim.headerBg}`}>{dim.name}</th>
+                                            <th key={dim.key} colSpan={criteriaConfig[dim.key].count + 1} className={`text-center py-2 border-r-2 border-b-2 ${dim.cellBorder} text-white ${dim.headerBg}`}>{dim.name}</th>
                                         ))}
-                                        <th rowSpan={2} className="bg-slate-800 text-white font-display border-b-2 border-l-2 border-slate-600 w-32 text-center text-2xl sticky right-0 top-0 !z-[100]">NOTA FINAL</th>
+                                        <th rowSpan={2} className="bg-slate-800 text-white border-b-2 border-l-2 border-slate-600 w-28 text-center sticky right-0 top-0 !z-[100]">NOTA FINAL</th>
                                     </tr>
-                                    <tr className="text-xs font-black">
+                                    <tr className="text-[9px] font-black uppercase">
                                         {DIMENSIONS.map(dim => visibleDimensions[dim.key] && (
                                             <React.Fragment key={dim.key}>
                                                 {Array.from({length: criteriaConfig[dim.key].count}).map((_, i) => (
-                                                    <th key={i} className={`p-2 border-b-2 border-r-2 ${dim.cellBorder} ${dim.colBg} min-w-[70px] text-center`}><span className={`inline-block px-2 py-1 rounded-md text-white text-[10px] ${dim.badgeBg}`}>{criteriaConfig[dim.key].titles[i] ? criteriaConfig[dim.key].titles[i].substring(0, 3) : `C${i+1}`}</span></th>
+                                                    <th key={i} className={`p-1 border-b-2 border-r-2 ${dim.cellBorder} ${dim.colBg} min-w-[60px] text-center`}><span className={`inline-block px-2 py-0.5 rounded text-white text-[8px] ${dim.badgeBg}`}>C{i+1}</span></th>
                                                 ))}
-                                                <th className={`p-2 border-b-2 border-r-2 ${dim.cellBorder} ${dim.proColBg} min-w-[60px] text-center font-display text-2xl ${dim.colorText}`}>PRO</th>
+                                                <th className={`p-1 border-b-2 border-r-2 ${dim.cellBorder} ${dim.proColBg} min-w-[50px] text-center ${dim.colorText}`}>PRO</th>
                                             </React.Fragment>
                                         ))}
                                     </tr>
@@ -434,27 +428,28 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                                         const scores = calculatedScores[student.id] || {};
                                         const isWithdrawn = student.status === 'WITHDRAWN';
                                         return (
-                                            <tr key={student.id} className={`group relative ${isWithdrawn ? 'bg-red-50/20 grayscale-[0.5]' : ''}`}>
-                                                <td className={`sticky left-0 !z-[40] text-center font-bold text-slate-500 border-r-2 border-b-2 border-slate-200 p-2 ${isWithdrawn ? 'bg-red-50/50' : 'bg-slate-50'}`}>{idx + 1}</td>
-                                                <td className={`sticky left-12 !z-[40] font-bold p-2 uppercase border-r-2 border-b-2 border-slate-200 text-xs truncate max-w-[300px] ${isWithdrawn ? 'bg-red-50/50 text-red-300 italic' : 'bg-white text-slate-800'}`}>
+                                            <tr key={student.id} className={`group relative transition-all duration-200 ${isWithdrawn ? 'bg-red-50/20 grayscale-[0.5]' : 'hover:bg-slate-50 focus-within:bg-orange-50/60'}`}>
+                                                <td className={`sticky left-0 !z-[40] text-center font-bold text-slate-400 border-r-2 border-b-2 border-slate-400 p-2 transition-colors ${isWithdrawn ? 'bg-red-50/50' : 'bg-white group-focus-within:bg-orange-100 group-focus-within:border-b-orange-300'}`}>{idx + 1}</td>
+                                                <td className={`sticky left-12 !z-[40] font-black p-2 uppercase border-r-2 border-b-2 border-slate-400 text-[11px] truncate max-w-[300px] transition-colors border-l-4 border-l-transparent group-focus-within:border-l-orange-500 group-focus-within:bg-orange-100 group-focus-within:text-slate-900 group-focus-within:border-b-orange-300 ${isWithdrawn ? 'bg-red-50/50 text-red-300 italic' : 'bg-white text-slate-700'}`}>
                                                     {student.name} {isWithdrawn && <span className="ml-1 text-[8px] font-black uppercase text-red-500">(R)</span>}
                                                 </td>
                                                 {DIMENSIONS.map(dim => visibleDimensions[dim.key] && (
                                                     <React.Fragment key={dim.key}>
                                                         {Array.from({length: criteriaConfig[dim.key].count}).map((_, i) => (
                                                             <td key={i} className={`p-1 border-r-2 border-b-2 ${dim.cellBorder} text-center ${dim.colBg} ${isWithdrawn ? 'bg-red-50/10' : ''}`}> 
-                                                                <div className="relative w-full h-10 flex items-center">
-                                                                    <input type="text" disabled={isWithdrawn} inputMode="decimal" value={gradesData[student.id]?.[dim.key]?.[i] || ''} onChange={e => { const val = e.target.value; if (val === '' || /^\d{0,2}(\.\d{0,1})?$/.test(val)) { if (parseFloat(val) > dim.maxPoints) return; handleGradeChange(student.id, dim.key, i, val); } }} className={`w-full h-full text-center text-lg font-bold ${dim.colorText} bg-transparent border-2 border-transparent rounded focus:bg-white focus:border-orange-600 focus:text-orange-600 outline-none transition-all disabled:text-slate-200 disabled:cursor-not-allowed`} placeholder={isWithdrawn ? "R" : "-"} />
+                                                                <div className="relative w-full h-8 flex items-center">
+                                                                    <input type="text" disabled={isWithdrawn} inputMode="decimal" value={gradesData[student.id]?.[dim.key]?.[i] || ''} onChange={e => { const val = e.target.value; if (val === '' || /^\d{0,2}(\.\d{0,1})?$/.test(val)) { if (parseFloat(val) > dim.maxPoints) return; handleGradeChange(student.id, dim.key, i, val); } }} className={`w-full h-full text-center text-sm font-bold ${dim.colorText} bg-transparent border-2 border-transparent rounded focus:bg-white focus:border-orange-500 outline-none transition-all disabled:text-slate-200 disabled:cursor-not-allowed shadow-[inset_0_0_0_1px_transparent] focus:shadow-[0_0_0_2px_rgba(249,115,22,0.2)]`} placeholder={isWithdrawn ? "R" : "-"} />
                                                                     {!isWithdrawn && (
-                                                                        <div className="absolute right-0 top-0 h-full w-6 flex items-center justify-center cursor-pointer text-slate-400 hover:text-orange-600" onMouseDown={(e) => handlePickerTrigger(e, student.id, dim.key, i, dim.maxPoints)}><i className="fas fa-chevron-down text-[10px]"></i></div>
+                                                                        <div className="absolute right-0 top-0 h-full w-4 flex items-center justify-center cursor-pointer text-slate-300 hover:text-orange-600" onMouseDown={(e) => handlePickerTrigger(e, student.id, dim.key, i, dim.maxPoints)}><i className="fas fa-chevron-down text-[8px]"></i></div>
                                                                     )}
                                                                 </div>
                                                             </td>
                                                         ))}
-                                                        <td className={`p-1 border-r-2 border-b-2 ${dim.cellBorder} text-center font-display text-4xl ${dim.proColBg} ${dim.colorText} ${isWithdrawn ? 'bg-red-50/30 text-red-200' : ''}`}>{scores[`${dim.key}_weighted`] ?? 0}</td>
+                                                        <td className={`p-1 border-r-2 border-b-2 ${dim.cellBorder} text-center font-black text-xl ${dim.proColBg} ${dim.colorText} ${isWithdrawn ? 'bg-red-50/30 text-red-100' : ''}`}>{scores[`${dim.key}_weighted`] ?? 0}</td>
                                                     </React.Fragment>
                                                 ))}
-                                                <td className={`sticky right-0 !z-[40] font-display text-7xl text-center p-2 border-b-2 border-l-2 border-slate-600 ${isWithdrawn ? 'bg-red-50/50 text-red-200' : scores.final < 51 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-green-600'}`}>{scores.final ?? 0}</td>
+                                                {/* Nota Final Escritorio igualada a text-xl */}
+                                                <td className={`sticky right-0 !z-[40] font-black text-xl text-center p-2 border-b-2 border-l-2 border-slate-600 ${isWithdrawn ? 'bg-red-50/50 text-red-100' : scores.final < 51 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{scores.final ?? 0}</td>
                                             </tr>
                                         );
                                     })}
@@ -470,10 +465,10 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                 <>
                     <div className="fixed inset-0 z-[200]" onClick={() => setPickerState(null)}></div>
                     <div className="fixed z-[201] bg-white border-2 border-slate-300 rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ top: pickerState.rect.bottom + 5, left: pickerState.rect.left - 10, width: pickerState.rect.width + 20, maxHeight: '200px' }}>
-                        <div className="bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500 text-center border-b border-slate-200 uppercase">SELECCIONAR</div>
+                        <div className="bg-slate-100 px-2 py-1 text-[8px] font-black text-slate-500 text-center border-b border-slate-200 uppercase">Seleccionar</div>
                         <div className="overflow-y-auto p-1 space-y-1 custom-scrollbar">
                             {Array.from({ length: pickerState.maxPoints }, (_, i) => i + 1).reverse().map(num => (
-                                <button key={num} onClick={() => handlePickerSelect(num.toString())} className="w-full text-center py-2 rounded-lg font-black text-slate-700 hover:bg-orange-50 hover:text-orange-600 transition-colors">{num}</button>
+                                <button key={num} onClick={() => handlePickerSelect(num.toString())} className="w-full text-center py-2 rounded-lg font-black text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">{num}</button>
                             ))}
                         </div>
                     </div>
@@ -482,22 +477,22 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
 
             <Modal isOpen={isPasteModalOpen} onClose={() => setIsPasteModalOpen(false)} title={<span><i className="fas fa-paste text-blue-600 mr-2"></i> Pegar Notas - {pasteTargetDimension?.toUpperCase()}</span>} footer={<><Button variant="secondary" onClick={() => setIsPasteModalOpen(false)}>Cancelar</Button><Button variant="primary" onClick={handlePasteProcess} className="ml-2">Procesar</Button></>}>
                 <div className="space-y-4 text-slate-700">
-                    <p className="text-sm font-medium">Copie la columna desde Excel y péguela aquí. Si el criterio tiene múltiples casillas, la IA las distribuirá.</p>
-                    <textarea className="w-full h-64 border-2 border-slate-300 rounded-xl p-4 font-mono text-base text-black bg-white focus:border-blue-500 outline-none shadow-inner" placeholder="Pegue sus datos aquí..." value={pasteContent} onChange={e => setPasteContent(e.target.value)}></textarea>
+                    <p className="text-sm font-medium">Copie la columna desde Excel y péguela aquí para distribuirla automáticamente.</p>
+                    <textarea className="w-full h-64 border-2 border-slate-300 rounded-xl p-4 font-mono text-sm text-black bg-slate-50 focus:bg-white focus:border-blue-500 outline-none shadow-inner" placeholder="Pega tus notas aquí..." value={pasteContent} onChange={e => setPasteContent(e.target.value)}></textarea>
                 </div>
             </Modal>
             
             <Modal isOpen={isCentralizerModalOpen} onClose={() => setIsCentralizerModalOpen(false)} title={<span><i className="fas fa-table text-indigo-600 mr-2"></i> Centralizador Anual</span>} footer={<Button variant="secondary" onClick={() => setIsCentralizerModalOpen(false)} className="w-full">Cerrar</Button>}>
                 {isLoadingCentralizer ? (
-                     <div className="flex flex-col items-center justify-center py-10"><div className="loader-circle mb-4 !w-12 !h-12 !border-4"></div><p className="text-slate-500 font-bold animate-pulse">Calculando promedios...</p></div>
+                     <div className="flex flex-col items-center justify-center py-10"><div className="loader-circle mb-4 !w-12 !h-12 !border-4"></div><p className="text-slate-500 font-bold animate-pulse">Calculando...</p></div>
                 ) : (
-                    <div className="neo-table-container shadow-none border-0">
-                        <table className="neo-table">
-                            <thead><tr><th className="w-12 text-center bg-slate-100 text-slate-600">N°</th><th className="text-left bg-slate-100 text-slate-600">Estudiante</th><th className="text-center bg-indigo-50 text-indigo-700">1° Trim</th><th className="text-center bg-indigo-50 text-indigo-700">2° Trim</th><th className="text-center bg-indigo-50 text-indigo-700">3° Trim</th><th className="text-center bg-slate-800 text-white">PROMEDIO</th></tr></thead>
+                    <div className="neo-table-container shadow-none border-0 overflow-x-auto">
+                        <table className="neo-table w-full">
+                            <thead><tr><th className="w-10 text-center bg-slate-100 text-slate-600">N°</th><th className="text-left bg-slate-100 text-slate-600 pl-4">Estudiante</th><th className="text-center bg-indigo-50 text-indigo-700">T1</th><th className="text-center bg-indigo-50 text-indigo-700">T2</th><th className="text-center bg-indigo-50 text-indigo-700">T3</th><th className="text-center bg-slate-800 text-white">PRO</th></tr></thead>
                             <tbody>{centralizerData.map((student, idx) => {
                                 const isWithdrawn = student.status === 'WITHDRAWN';
                                 return (
-                                    <tr key={student.id} className={`hover:bg-slate-50 ${isWithdrawn ? 'bg-red-50/30 opacity-60' : ''}`}><td className="text-center font-bold text-slate-500 border-r border-slate-100">{idx + 1}</td><td className={`font-bold text-xs uppercase border-r border-slate-100 ${isWithdrawn ? 'text-red-300' : 'text-slate-700'}`}>{student.name} {isWithdrawn && "(R)"}</td><td className="text-center font-bold text-slate-600 border-r border-slate-100">{student.t1 || '-'}</td><td className="text-center font-bold text-slate-600 border-r border-slate-100">{student.t2 || '-'}</td><td className="text-center font-bold text-slate-600 border-r border-slate-100">{student.t3 || '-'}</td><td className={`text-center font-black text-lg ${isWithdrawn ? 'text-red-200 bg-red-50' : student.anual >= 51 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>{student.anual}</td></tr>
+                                    <tr key={student.id} className={`hover:bg-slate-50 ${isWithdrawn ? 'bg-red-50/30 opacity-60' : ''}`}><td className="text-center font-bold text-slate-400 border-r border-slate-100">{idx + 1}</td><td className={`font-black text-[11px] uppercase border-r border-slate-100 pl-4 ${isWithdrawn ? 'text-red-300' : 'text-slate-700'}`}>{student.name} {isWithdrawn && "(R)"}</td><td className="text-center font-bold text-slate-500 border-r border-slate-100">{student.t1 || '-'}</td><td className="text-center font-bold text-slate-500 border-r border-slate-100">{student.t2 || '-'}</td><td className="text-center font-bold text-slate-500 border-r border-slate-100">{student.t3 || '-'}</td><td className={`text-center font-black text-xl ${isWithdrawn ? 'text-red-200 bg-red-50' : student.anual >= 51 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>{student.anual}</td></tr>
                                 );
                             })}</tbody>
                         </table>
