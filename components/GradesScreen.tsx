@@ -35,6 +35,13 @@ const DIMENSIONS: {
     { key: 'auto', name: 'AUTO (5 PTS)', shortName: 'AUTO', colorText: 'text-purple-700', borderColor: 'border-purple-600', cellBorder: 'border-purple-500', headerBg: 'bg-purple-600', badgeBg: 'bg-purple-600', colBg: 'bg-purple-50', proColBg: 'bg-slate-50', maxPoints: 5, maxCount: 1 },
 ];
 
+const SELECT_ICON_STYLE = {
+    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%23000000\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'4\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1rem'
+};
+
 interface PickerState {
     isOpen: boolean;
     rect: DOMRect | null;
@@ -321,7 +328,12 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                              <div className="flex items-center gap-2 bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 shadow-inner w-full sm:w-auto">
                                 <span className="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Periodo:</span>
-                                <select value={selectedTerm} onChange={e => setSelectedTerm(e.target.value)} className="bg-transparent text-slate-800 font-bold text-base focus:outline-none cursor-pointer uppercase w-full">
+                                <select 
+                                    value={selectedTerm} 
+                                    onChange={e => setSelectedTerm(e.target.value)} 
+                                    className="bg-transparent text-slate-800 font-bold text-base focus:outline-none cursor-pointer uppercase w-full appearance-none pr-8"
+                                    style={SELECT_ICON_STYLE}
+                                >
                                     <option value="1">1er Trimestre</option>
                                     <option value="2">2do Trimestre</option>
                                     <option value="3">3er Trimestre</option>
@@ -339,7 +351,12 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                                 </div>
                                 {dim.key !== 'auto' ? (
                                     <>
-                                        <select value={criteriaConfig[dim.key].count} onChange={(e) => handleCriteriaCountChange(dim.key, parseInt(e.target.value))} className={`w-full mb-3 text-sm p-2 rounded border-2 bg-white font-bold text-slate-700 outline-none ${dim.borderColor}`}>
+                                        <select 
+                                            value={criteriaConfig[dim.key].count} 
+                                            onChange={(e) => handleCriteriaCountChange(dim.key, parseInt(e.target.value))} 
+                                            className={`w-full mb-3 text-sm p-2 rounded border-2 bg-white font-bold text-slate-700 outline-none appearance-none pr-8 ${dim.borderColor}`}
+                                            style={SELECT_ICON_STYLE}
+                                        >
                                             {Array.from({length: dim.maxCount}, (_, i) => i + 1).map(n => (<option key={n} value={n}>{n} Casillas</option>))}
                                         </select>
                                         <div className="space-y-2 w-full">
@@ -440,7 +457,9 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                                                                 <div className="relative w-full h-8 flex items-center">
                                                                     <input type="text" disabled={isWithdrawn} inputMode="decimal" value={gradesData[student.id]?.[dim.key]?.[i] || ''} onChange={e => { const val = e.target.value; if (val === '' || /^\d{0,2}(\.\d{0,1})?$/.test(val)) { if (parseFloat(val) > dim.maxPoints) return; handleGradeChange(student.id, dim.key, i, val); } }} className={`w-full h-full text-center text-sm font-bold ${dim.colorText} bg-transparent border-2 border-transparent rounded focus:bg-white focus:border-orange-500 outline-none transition-all disabled:text-slate-200 disabled:cursor-not-allowed shadow-[inset_0_0_0_1px_transparent] focus:shadow-[0_0_0_2px_rgba(249,115,22,0.2)]`} placeholder={isWithdrawn ? "R" : "-"} />
                                                                     {!isWithdrawn && (
-                                                                        <div className="absolute right-0 top-0 h-full w-4 flex items-center justify-center cursor-pointer text-slate-300 hover:text-orange-600" onMouseDown={(e) => handlePickerTrigger(e, student.id, dim.key, i, dim.maxPoints)}><i className="fas fa-chevron-down text-[8px]"></i></div>
+                                                                        <div className="absolute right-0 top-0 h-full w-4 flex items-center justify-center cursor-pointer text-slate-900 hover:text-orange-600" onMouseDown={(e) => handlePickerTrigger(e, student.id, dim.key, i, dim.maxPoints)}>
+                                                                            <i className="fas fa-chevron-down text-[8px]"></i>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             </td>
