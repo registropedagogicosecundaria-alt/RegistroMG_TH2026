@@ -421,7 +421,7 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                         <div className="hidden lg:block neo-table-container overflow-auto h-[calc(100vh-140px)] custom-scrollbar shadow-inner bg-white rounded-xl border-2 border-slate-300 relative">
                             <table className="neo-table border-separate border-spacing-0 w-full">
                                 <thead className="sticky top-0 !z-[100]">
-                                    <tr className="uppercase text-[10px] tracking-widest font-black">
+                                    <tr className="uppercase text-[10px] tracking-widest font-black text-slate-600">
                                         <th rowSpan={2} className="sticky left-0 top-0 !z-[100] bg-slate-100 text-slate-700 border-b-2 border-r-2 border-slate-400 w-12 text-center">N°</th>
                                         <th rowSpan={2} className="sticky left-12 top-0 !z-[100] bg-slate-100 text-slate-700 border-b-2 border-r-2 border-slate-400 min-w-[300px] text-left pl-4">ESTUDIANTE</th>
                                         {DIMENSIONS.map(dim => visibleDimensions[dim.key] && (
@@ -445,15 +445,19 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                                         const scores = calculatedScores[student.id] || {};
                                         const isWithdrawn = student.status === 'WITHDRAWN';
                                         return (
-                                            <tr key={student.id} className={`group relative transition-all duration-200 ${isWithdrawn ? 'bg-red-50/20 grayscale-[0.5]' : 'hover:bg-slate-50 focus-within:bg-orange-50/60'}`}>
-                                                <td className={`sticky left-0 !z-[40] text-center font-bold text-slate-400 border-r-2 border-b-2 border-slate-400 p-2 transition-colors ${isWithdrawn ? 'bg-red-50/50' : 'bg-white group-focus-within:bg-orange-100 group-focus-within:border-b-orange-300'}`}>{idx + 1}</td>
-                                                <td className={`sticky left-12 !z-[40] font-black p-2 uppercase border-r-2 border-b-2 border-slate-400 text-[11px] truncate max-w-[300px] transition-colors border-l-4 border-l-transparent group-focus-within:border-l-orange-500 group-focus-within:bg-orange-100 group-focus-within:text-slate-900 group-focus-within:border-b-orange-300 ${isWithdrawn ? 'bg-red-50/50 text-red-300 italic' : 'bg-white text-slate-700'}`}>
+                                            <tr key={student.id} className={`group relative transition-all duration-200 ${isWithdrawn ? 'bg-red-50/20 grayscale-[0.5]' : 'hover:bg-slate-50'}`}>
+                                                {/* Celda N°: Borde superior, inferior e izquierdo resaltados */}
+                                                <td className={`sticky left-0 !z-[40] text-center font-bold text-slate-400 border-r-2 border-b-2 border-slate-400 p-2 transition-all duration-150 ${isWithdrawn ? 'bg-red-50/50' : 'bg-white group-focus-within:bg-orange-100 group-focus-within:border-t-orange-500 group-focus-within:border-b-orange-500 group-focus-within:border-l-4 group-focus-within:border-l-orange-500 group-focus-within:text-slate-900'}`}>{idx + 1}</td>
+                                                
+                                                {/* Celda Estudiante: Borde superior e inferior resaltados */}
+                                                <td className={`sticky left-12 !z-[40] font-black p-2 uppercase border-r-2 border-b-2 border-slate-400 text-[11px] truncate max-w-[300px] transition-all duration-150 ${isWithdrawn ? 'bg-red-50/50 text-red-300 italic' : 'bg-white text-slate-700 group-focus-within:bg-orange-100 group-focus-within:border-t-orange-500 group-focus-within:border-b-orange-500 group-focus-within:text-slate-900'}`}>
                                                     {student.name} {isWithdrawn && <span className="ml-1 text-[8px] font-black uppercase text-red-500">(R)</span>}
                                                 </td>
+
                                                 {DIMENSIONS.map(dim => visibleDimensions[dim.key] && (
                                                     <React.Fragment key={dim.key}>
                                                         {Array.from({length: criteriaConfig[dim.key].count}).map((_, i) => (
-                                                            <td key={i} className={`p-1 border-r-2 border-b-2 ${dim.cellBorder} text-center ${dim.colBg} ${isWithdrawn ? 'bg-red-50/10' : ''}`}> 
+                                                            <td key={i} className={`p-1 border-r-2 border-b-2 ${dim.cellBorder} text-center ${dim.colBg} transition-all duration-150 ${isWithdrawn ? 'bg-red-50/10' : 'group-focus-within:bg-orange-50 group-focus-within:border-t-orange-500 group-focus-within:border-b-orange-500'}`}> 
                                                                 <div className="relative w-full h-8 flex items-center">
                                                                     <input type="text" disabled={isWithdrawn} inputMode="decimal" value={gradesData[student.id]?.[dim.key]?.[i] || ''} onChange={e => { const val = e.target.value; if (val === '' || /^\d{0,2}(\.\d{0,1})?$/.test(val)) { if (parseFloat(val) > dim.maxPoints) return; handleGradeChange(student.id, dim.key, i, val); } }} className={`w-full h-full text-center text-sm font-bold ${dim.colorText} bg-transparent border-2 border-transparent rounded focus:bg-white focus:border-orange-500 outline-none transition-all disabled:text-slate-200 disabled:cursor-not-allowed shadow-[inset_0_0_0_1px_transparent] focus:shadow-[0_0_0_2px_rgba(249,115,22,0.2)]`} placeholder={isWithdrawn ? "R" : "-"} />
                                                                     {!isWithdrawn && (
@@ -464,11 +468,13 @@ const GradesScreen: React.FC<{ setView: (v: View) => void, selectedCourse: strin
                                                                 </div>
                                                             </td>
                                                         ))}
-                                                        <td className={`p-1 border-r-2 border-b-2 ${dim.cellBorder} text-center font-black text-xl ${dim.proColBg} ${dim.colorText} ${isWithdrawn ? 'bg-red-50/30 text-red-100' : ''}`}>{scores[`${dim.key}_weighted`] ?? 0}</td>
+                                                        {/* Celda PRO de dimensión: Borde superior e inferior resaltados */}
+                                                        <td className={`p-1 border-r-2 border-b-2 ${dim.cellBorder} text-center font-black text-xl ${dim.proColBg} ${dim.colorText} transition-all duration-150 ${isWithdrawn ? 'bg-red-50/30 text-red-100' : 'group-focus-within:bg-orange-50 group-focus-within:border-t-orange-500 group-focus-within:border-b-orange-500'}`}>{scores[`${dim.key}_weighted`] ?? 0}</td>
                                                     </React.Fragment>
                                                 ))}
-                                                {/* Nota Final Escritorio igualada a text-xl */}
-                                                <td className={`sticky right-0 !z-[40] font-black text-xl text-center p-2 border-b-2 border-l-2 border-slate-600 ${isWithdrawn ? 'bg-red-50/50 text-red-100' : scores.final < 51 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{scores.final ?? 0}</td>
+
+                                                {/* Celda NOTA FINAL: Borde superior, inferior y derecho resaltados */}
+                                                <td className={`sticky right-0 !z-[40] font-black text-xl text-center p-2 border-b-2 border-l-2 border-slate-600 transition-all duration-150 ${isWithdrawn ? 'bg-red-50/50 text-red-100' : scores.final < 51 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'} group-focus-within:bg-orange-100 group-focus-within:border-t-orange-500 group-focus-within:border-b-orange-500 group-focus-within:border-r-4 group-focus-within:border-r-orange-500`}>{scores.final ?? 0}</td>
                                             </tr>
                                         );
                                     })}
